@@ -3,7 +3,7 @@ import { API } from "api"
 import { licensing } from "stores/portal"
 
 export function createGroupsStore() {
-  const store = writable([])
+  const store = writable(undefined)
 
   const updateStore = group => {
     store.update(state => {

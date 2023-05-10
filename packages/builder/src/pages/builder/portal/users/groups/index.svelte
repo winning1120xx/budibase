@@ -146,6 +146,7 @@
     <Table
       on:click={({ detail }) => $goto(`./${detail._id}`)}
       {schema}
+      loading={!$groups}
       data={filteredGroups}
       allowEditColumns={false}
       allowEditRows={false}
