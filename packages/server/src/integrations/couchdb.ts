@@ -7,7 +7,7 @@ import {
 } from "@budibase/types"
 import { db as dbCore } from "@budibase/backend-core"
 
-interface CouchDBConfig {
+export interface CouchDBConfig {
   url: string
   database: string
 }
@@ -134,7 +134,18 @@ class CouchDBIntegration implements IntegrationBase {
   }
 }
 
+async function validateConnection(config: CouchDBConfig) {
+  const integration = new CouchDBIntegration(config)
+  try {
+    const result = await integration.query("exists", "validation error", {})
+    return result === true
+  } catch (e: any) {
+    return { error: e.message as string }
+  }
+}
+
 export default {
   schema: SCHEMA,
   integration: CouchDBIntegration,
+  validateConnection,
 }
