@@ -22,7 +22,7 @@ import { MSSQLTablesResponse, MSSQLColumn } from "./base/types"
 const sqlServer = require("mssql")
 const DEFAULT_SCHEMA = "dbo"
 
-interface MSSQLConfig {
+export interface MSSQLConfig {
   user: string
   password: string
   server: string
@@ -146,6 +146,10 @@ class SqlServerIntegration extends Sql implements DatasourcePlus {
       throw new Error(err)
     }
   }
+
+  // async end(){
+  //   this.client!.
+  // }
 
   async internalQuery(
     query: SqlQuery,
@@ -315,7 +319,18 @@ class SqlServerIntegration extends Sql implements DatasourcePlus {
   }
 }
 
+async function validateConnection(config: MSSQLConfig) {
+  const integration = new SqlServerIntegration(config)
+  try {
+    await integration.connect()
+    return true
+  } catch (e: any) {
+    return { error: e.message as string }
+  }
+}
+
 export default {
   schema: SCHEMA,
   integration: SqlServerIntegration,
+  validateConnection,
 }
