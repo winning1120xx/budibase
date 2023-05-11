@@ -114,4 +114,35 @@ describe("datasource validators", () => {
       })
     })
   })
+
+  describe("couchdb", () => {
+    const validator = integrations.getValidator[SourceName.COUCHDB]!
+
+    it("test valid connection string", async () => {
+      const result = await validator({
+        url: env.COUCH_DB_URL,
+        database: "",
+      })
+      expect(result).toBe(true)
+    })
+
+    it("test invalid database", async () => {
+      const result = await validator({
+        url: env.COUCH_DB_URL,
+        database: "db",
+      })
+      expect(result).toBe(false)
+    })
+
+    it("test invalid url", async () => {
+      const result = await validator({
+        url: "http://invalid:123",
+        database: "any",
+      })
+      expect(result).toEqual({
+        error:
+          "request to http://invalid:123/any failed, reason: getaddrinfo ENOTFOUND invalid",
+      })
+    })
+  })
 })
