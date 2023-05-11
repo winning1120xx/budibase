@@ -5,6 +5,7 @@ import { generator } from "@budibase/backend-core/tests"
 
 jest.unmock("pg")
 jest.unmock("mysql2/promise")
+jest.unmock("mssql")
 
 describe("datasource validators", () => {
   describe("postgres", () => {
@@ -168,6 +169,52 @@ describe("datasource validators", () => {
       expect(result).toEqual({
         error:
           "request to http://invalid:123/any failed, reason: getaddrinfo ENOTFOUND invalid",
+      })
+    })
+  })
+
+  describe("mssql", () => {
+    const validator = integrations.getValidator[SourceName.SQL_SERVER]!
+
+    let host: string, port: number
+
+    beforeAll(async () => {
+      const container = await new GenericContainer(
+        "mcr.microsoft.com/mssql/server"
+      )
+        .withExposedPorts(1433)
+        .withEnv("ACCEPT_EULA", "Y")
+        .withEnv("MSSQL_SA_PASSWORD", "Str0Ng_p@ssW0rd!")
+        .withEnv("MSSQL_PID", "Developer")
+        .start()
+
+      host = container.getContainerIpAddress()
+      port = container.getMappedPort(1433)
+    })
+
+    it("test valid connection string", async () => {
+      const result = await validator({
+        user: "sa",
+        password: "Str0Ng_p@ssW0rd!",
+        server: host,
+        port: port,
+        database: "master",
+        schema: "dbo",
+      })
+      expect(result).toBe(true)
+    })
+
+    it("test invalid password", async () => {
+      const result = await validator({
+        user: "sa",
+        password: "wrong_pwd",
+        server: host,
+        port: port,
+        database: "master",
+        schema: "dbo",
+      })
+      expect(result).toEqual({
+        error: "ConnectionError: Login failed for user 'sa'.",
       })
     })
   })

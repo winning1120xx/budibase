@@ -125,6 +125,7 @@ const VALIDATORS = {
   [SourceName.POSTGRES]: postgres.validateConnection,
   [SourceName.MYSQL]: mysql.validateConnection,
   [SourceName.COUCHDB]: couchdb.validateConnection,
+  [SourceName.SQL_SERVER]: sqlServer.validateConnection,
 }
 
 export default {
