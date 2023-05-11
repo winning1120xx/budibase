@@ -150,6 +150,32 @@ describe("datasource validators", () => {
       url = `http://${user}:${password}@${host}:${port}`
     })
 
+    let url: string
+
+    beforeAll(async () => {
+      const user = generator.first()
+      const password = generator.hash()
+
+      const container = await new GenericContainer("budibase/couchdb")
+        .withExposedPorts(5984)
+        .withEnv("COUCHDB_USER", user)
+        .withEnv("COUCHDB_PASSWORD", password)
+        .start()
+
+      const host = container.getContainerIpAddress()
+      const port = container.getMappedPort(5984)
+
+      await container.exec([
+        `curl`,
+        `-u`,
+        `${user}:${password}`,
+        `-X`,
+        `PUT`,
+        `localhost:5984/db`,
+      ])
+      url = `http://${user}:${password}@${host}:${port}`
+    })
+
     it("test valid connection string", async () => {
       const integration = new couchdb.integration({
         url,
