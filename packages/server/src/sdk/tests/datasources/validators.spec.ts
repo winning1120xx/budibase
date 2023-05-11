@@ -1,6 +1,7 @@
 import { GenericContainer } from "testcontainers"
 import postgres from "../../../integrations/postgres"
 import mysql from "../../../integrations/mysql"
+import { generator } from "@budibase/backend-core/tests"
 
 jest.unmock("pg")
 jest.unmock("mysql2/promise")
@@ -118,18 +119,44 @@ describe("datasource validators", () => {
   describe("couchdb", () => {
     const validator = integrations.getValidator[SourceName.COUCHDB]!
 
+    let url: string
+
+    beforeAll(async () => {
+      const user = generator.first()
+      const password = generator.hash()
+
+      const container = await new GenericContainer("budibase/couchdb")
+        .withExposedPorts(5984)
+        .withEnv("COUCHDB_USER", user)
+        .withEnv("COUCHDB_PASSWORD", password)
+        .start()
+
+      const host = container.getContainerIpAddress()
+      const port = container.getMappedPort(5984)
+
+      await container.exec([
+        `curl`,
+        `-u`,
+        `${user}:${password}`,
+        `-X`,
+        `PUT`,
+        `localhost:5984/db`,
+      ])
+      url = `http://${user}:${password}@${host}:${port}`
+    })
+
     it("test valid connection string", async () => {
       const result = await validator({
-        url: env.COUCH_DB_URL,
-        database: "",
+        url,
+        database: "db",
       })
       expect(result).toBe(true)
     })
 
     it("test invalid database", async () => {
       const result = await validator({
-        url: env.COUCH_DB_URL,
-        database: "db",
+        url,
+        database: "random_db",
       })
       expect(result).toBe(false)
     })
