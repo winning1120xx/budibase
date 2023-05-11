@@ -124,6 +124,7 @@ export async function getIntegration(integration: SourceName) {
 const VALIDATORS = {
   [SourceName.POSTGRES]: postgres.validateConnection,
   [SourceName.MYSQL]: mysql.validateConnection,
+  [SourceName.COUCHDB]: couchdb.validateConnection,
 }
 
 export default {

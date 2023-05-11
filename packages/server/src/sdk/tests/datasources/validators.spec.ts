@@ -1,6 +1,7 @@
 import { SourceName } from "@budibase/types"
 import integrations from "../../../integrations"
 import { GenericContainer } from "testcontainers"
+import { env } from "@budibase/backend-core"
 
 jest.unmock("pg")
 jest.unmock("mysql2/promise")
@@ -110,6 +111,37 @@ describe("datasource validators", () => {
       expect(result).toEqual({
         error:
           "Access denied for user 'root'@'172.17.0.1' (using password: YES)",
+      })
+    })
+  })
+
+  describe("couchdb", () => {
+    const validator = integrations.getValidator[SourceName.COUCHDB]!
+
+    it("test valid connection string", async () => {
+      const result = await validator({
+        url: env.COUCH_DB_URL,
+        database: "",
+      })
+      expect(result).toBe(true)
+    })
+
+    it("test invalid database", async () => {
+      const result = await validator({
+        url: env.COUCH_DB_URL,
+        database: "db",
+      })
+      expect(result).toBe(false)
+    })
+
+    it("test invalid url", async () => {
+      const result = await validator({
+        url: "http://invalid:123",
+        database: "any",
+      })
+      expect(result).toEqual({
+        error:
+          "request to http://invalid:123/any failed, reason: getaddrinfo ENOTFOUND invalid",
       })
     })
   })
