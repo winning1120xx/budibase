@@ -1,7 +1,8 @@
 import { GenericContainer } from "testcontainers"
+import { generator } from "@budibase/backend-core/tests"
 import postgres from "../../../integrations/postgres"
 import mysql from "../../../integrations/mysql"
-import { generator } from "@budibase/backend-core/tests"
+import couchdb from "../../../integrations/couchdb"
 
 jest.unmock("pg")
 jest.unmock("mysql2/promise")
@@ -117,8 +118,6 @@ describe("datasource validators", () => {
   })
 
   describe("couchdb", () => {
-    const validator = integrations.getValidator[SourceName.COUCHDB]!
-
     let url: string
 
     beforeAll(async () => {
@@ -146,26 +145,29 @@ describe("datasource validators", () => {
     })
 
     it("test valid connection string", async () => {
-      const result = await validator({
+      const integration = new couchdb.integration({
         url,
         database: "db",
       })
+      const result = await integration.testConnection()
       expect(result).toBe(true)
     })
 
     it("test invalid database", async () => {
-      const result = await validator({
+      const integration = new couchdb.integration({
         url,
         database: "random_db",
       })
+      const result = await integration.testConnection()
       expect(result).toBe(false)
     })
 
     it("test invalid url", async () => {
-      const result = await validator({
+      const integration = new couchdb.integration({
         url: "http://invalid:123",
         database: "any",
       })
+      const result = await integration.testConnection()
       expect(result).toEqual({
         error:
           "request to http://invalid:123/any failed, reason: getaddrinfo ENOTFOUND invalid",
