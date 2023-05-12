@@ -121,6 +121,15 @@ class SqlServerIntegration extends Sql implements DatasourcePlus {
     }
   }
 
+  async testConnection() {
+    try {
+      await this.connect()
+      return true
+    } catch (e: any) {
+      return { error: e.message as string }
+    }
+  }
+
   getBindingIdentifier(): string {
     return `@p${this.index++}`
   }

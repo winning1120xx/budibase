@@ -1,8 +1,14 @@
-import { SourceName } from "@budibase/types"
-import integrations from "../../../integrations"
 import { GenericContainer, Wait } from "testcontainers"
 import { generator } from "@budibase/backend-core/tests"
 import { Duration, TemporalUnit } from "node-duration"
+import { SourceName } from "@budibase/types"
+import integrations from "../../../integrations"
+
+import postgres from "../../../integrations/postgres"
+import mysql from "../../../integrations/mysql"
+import couchdb from "../../../integrations/couchdb"
+import mssql from "../../../integrations/microsoftSqlServer"
+import mongo from "../../../integrations/mongodb"
 
 jest.unmock("pg")
 jest.unmock("mysql2/promise")
@@ -12,8 +18,6 @@ jest.unmock("arangojs")
 
 describe("datasource validators", () => {
   describe("postgres", () => {
-    const validator = integrations.getValidator[SourceName.POSTGRES]!
-
     let host: string
     let port: number
 
@@ -28,7 +32,7 @@ describe("datasource validators", () => {
     })
 
     it("test valid connection string", async () => {
-      const result = await validator({
+      const integration = new postgres.integration({
         host,
         port,
         database: "postgres",
@@ -38,11 +42,12 @@ describe("datasource validators", () => {
         ssl: false,
         rejectUnauthorized: false,
       })
+      const result = await integration.testConnection()
       expect(result).toBe(true)
     })
 
     it("test invalid connection string", async () => {
-      const result = await validator({
+      const integration = new postgres.integration({
         host,
         port,
         database: "postgres",
@@ -52,6 +57,7 @@ describe("datasource validators", () => {
         ssl: false,
         rejectUnauthorized: false,
       })
+      const result = await integration.testConnection()
       expect(result).toEqual({
         error: 'password authentication failed for user "wrong"',
       })
@@ -59,8 +65,6 @@ describe("datasource validators", () => {
   })
 
   describe("mysql", () => {
-    const validator = integrations.getValidator[SourceName.MYSQL]!
-
     let host: string
     let port: number
 
@@ -78,7 +82,7 @@ describe("datasource validators", () => {
     })
 
     it("test valid connection string", async () => {
-      const result = await validator({
+      const integration = new mysql.integration({
         host,
         port,
         user: "user",
@@ -86,11 +90,12 @@ describe("datasource validators", () => {
         password: "password",
         rejectUnauthorized: true,
       })
+      const result = await integration.testConnection()
       expect(result).toBe(true)
     })
 
     it("test invalid database", async () => {
-      const result = await validator({
+      const integration = new mysql.integration({
         host,
         port,
         user: "user",
@@ -98,13 +103,14 @@ describe("datasource validators", () => {
         password: "password",
         rejectUnauthorized: true,
       })
+      const result = await integration.testConnection()
       expect(result).toEqual({
         error: "Access denied for user 'user'@'%' to database 'test'",
       })
     })
 
     it("test invalid password", async () => {
-      const result = await validator({
+      const integration = new mysql.integration({
         host,
         port,
         user: "root",
@@ -112,6 +118,7 @@ describe("datasource validators", () => {
         password: "wrong",
         rejectUnauthorized: true,
       })
+      const result = await integration.testConnection()
       expect(result).toEqual({
         error:
           "Access denied for user 'root'@'172.17.0.1' (using password: YES)",
@@ -120,8 +127,6 @@ describe("datasource validators", () => {
   })
 
   describe("couchdb", () => {
-    const validator = integrations.getValidator[SourceName.COUCHDB]!
-
     let url: string
 
     beforeAll(async () => {
@@ -149,26 +154,29 @@ describe("datasource validators", () => {
     })
 
     it("test valid connection string", async () => {
-      const result = await validator({
+      const integration = new couchdb.integration({
         url,
         database: "db",
       })
+      const result = await integration.testConnection()
       expect(result).toBe(true)
     })
 
     it("test invalid database", async () => {
-      const result = await validator({
+      const integration = new couchdb.integration({
         url,
         database: "random_db",
       })
+      const result = await integration.testConnection()
       expect(result).toBe(false)
     })
 
     it("test invalid url", async () => {
-      const result = await validator({
+      const integration = new couchdb.integration({
         url: "http://invalid:123",
         database: "any",
       })
+      const result = await integration.testConnection()
       expect(result).toEqual({
         error:
           "request to http://invalid:123/any failed, reason: getaddrinfo ENOTFOUND invalid",
@@ -177,8 +185,6 @@ describe("datasource validators", () => {
   })
 
   describe("mssql", () => {
-    const validator = integrations.getValidator[SourceName.SQL_SERVER]!
-
     let host: string, port: number
 
     const password = "Str0Ng_p@ssW0rd!"
@@ -206,7 +212,7 @@ describe("datasource validators", () => {
     })
 
     it("test valid connection string", async () => {
-      const result = await validator({
+      const integration = new mssql.integration({
         user: "sa",
         password,
         server: host,
@@ -214,11 +220,12 @@ describe("datasource validators", () => {
         database: "master",
         schema: "dbo",
       })
+      const result = await integration.testConnection()
       expect(result).toBe(true)
     })
 
     it("test invalid password", async () => {
-      const result = await validator({
+      const integration = new mssql.integration({
         user: "sa",
         password: "wrong_pwd",
         server: host,
@@ -226,6 +233,7 @@ describe("datasource validators", () => {
         database: "master",
         schema: "dbo",
       })
+      const result = await integration.testConnection()
       expect(result).toEqual({
         error: "ConnectionError: Login failed for user 'sa'.",
       })
@@ -233,8 +241,6 @@ describe("datasource validators", () => {
   })
 
   describe("mongo", () => {
-    const validator = integrations.getValidator[SourceName.MONGODB]
-
     let connectionSettings: {
       user: string
       password: string
@@ -270,46 +276,50 @@ describe("datasource validators", () => {
     })
 
     it("test valid connection string", async () => {
-      const result = await validator({
+      const integration = new mongo.integration({
         connectionString: getConnectionString(),
         db: "",
         tlsCertificateFile: "",
         tlsCertificateKeyFile: "",
         tlsCAFile: "",
       })
+      const result = await integration.testConnection()
       expect(result).toBe(true)
     })
 
     it("test invalid password", async () => {
-      const result = await validator({
+      const integration = new mongo.integration({
         connectionString: getConnectionString({ password: "wrong" }),
         db: "",
         tlsCertificateFile: "",
         tlsCertificateKeyFile: "",
         tlsCAFile: "",
       })
+      const result = await integration.testConnection()
       expect(result).toEqual({ error: "Authentication failed." })
     })
 
     it("test invalid username", async () => {
-      const result = await validator({
+      const integration = new mongo.integration({
         connectionString: getConnectionString({ user: "wrong" }),
         db: "",
         tlsCertificateFile: "",
         tlsCertificateKeyFile: "",
         tlsCAFile: "",
       })
+      const result = await integration.testConnection()
       expect(result).toEqual({ error: "Authentication failed." })
     })
 
     it("test invalid connection", async () => {
-      const result = await validator({
+      const integration = new mongo.integration({
         connectionString: getConnectionString({ host: "http://nothinghere" }),
         db: "",
         tlsCertificateFile: "",
         tlsCertificateKeyFile: "",
         tlsCAFile: "",
       })
+      const result = await integration.testConnection()
       expect(result).toEqual({ error: "Error: getaddrinfo ENOTFOUND http" })
     })
   })

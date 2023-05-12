@@ -31,7 +31,7 @@ if (types) {
 
 const JSON_REGEX = /'{.*}'::json/s
 
-export interface PostgresConfig {
+interface PostgresConfig {
   host: string
   port: number
   database: string
@@ -148,6 +148,17 @@ class PostgresIntegration extends Sql implements DatasourcePlus {
     }
     this.client = new Client(newConfig)
     this.open = false
+  }
+
+  async testConnection() {
+    try {
+      await this.openConnection()
+      return true
+    } catch (e: any) {
+      return { error: e.message as string }
+    } finally {
+      await this.closeConnection()
+    }
   }
 
   getBindingIdentifier(): string {
@@ -330,20 +341,7 @@ class PostgresIntegration extends Sql implements DatasourcePlus {
   }
 }
 
-async function validateConnection(config: PostgresConfig) {
-  const integration = new PostgresIntegration(config)
-  try {
-    await integration.openConnection()
-    return true
-  } catch (e: any) {
-    return { error: e.message as string }
-  } finally {
-    await integration.closeConnection()
-  }
-}
-
 export default {
   schema: SCHEMA,
   integration: PostgresIntegration,
-  validateConnection,
 }
