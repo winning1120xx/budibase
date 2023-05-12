@@ -1,12 +1,13 @@
-import { GenericContainer } from "testcontainers"
+import { GenericContainer, Wait } from "testcontainers"
 import { generator } from "@budibase/backend-core/tests"
 import { Duration, TemporalUnit } from "node-duration"
+import { SourceName } from "@budibase/types"
+import integrations from "../../../integrations"
 
 import postgres from "../../../integrations/postgres"
 import mysql from "../../../integrations/mysql"
 import couchdb from "../../../integrations/couchdb"
-import { SourceName } from "@budibase/types"
-import integrations from "../../../integrations"
+import mssql from "../../../integrations/microsoftSqlServer"
 
 jest.unmock("pg")
 jest.unmock("mysql2/promise")
@@ -149,8 +150,6 @@ describe("datasource validators", () => {
       url = `http://${user}:${password}@${host}:${port}`
     })
 
-    let url: string
-
     beforeAll(async () => {
       const user = generator.first()
       const password = generator.hash()
@@ -206,9 +205,7 @@ describe("datasource validators", () => {
     })
   })
 
-  describe("mssql", () => {
-    const validator = integrations.getValidator[SourceName.SQL_SERVER]!
-
+  describe.only("mssql", () => {
     let host: string, port: number
 
     const password = "Str0Ng_p@ssW0rd!"
@@ -236,7 +233,7 @@ describe("datasource validators", () => {
     })
 
     it("test valid connection string", async () => {
-      const result = await validator({
+      const integration = new mssql.integration({
         user: "sa",
         password,
         server: host,
@@ -244,11 +241,12 @@ describe("datasource validators", () => {
         database: "master",
         schema: "dbo",
       })
+      const result = await integration.testConnection()
       expect(result).toBe(true)
     })
 
     it("test invalid password", async () => {
-      const result = await validator({
+      const integration = new mssql.integration({
         user: "sa",
         password: "wrong_pwd",
         server: host,
@@ -256,6 +254,7 @@ describe("datasource validators", () => {
         database: "master",
         schema: "dbo",
       })
+      const result = await integration.testConnection()
       expect(result).toEqual({
         error: "ConnectionError: Login failed for user 'sa'.",
       })
