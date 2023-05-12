@@ -16,7 +16,7 @@ import {
 } from "mongodb"
 import environment from "../environment"
 
-export interface MongoDBConfig {
+interface MongoDBConfig {
   connectionString: string
   db: string
   tlsCertificateFile: string
@@ -640,18 +640,8 @@ class MongoIntegration implements IntegrationBase {
     }
   }
 }
-async function validateConnection(config: MongoDBConfig) {
-  const integration = new MongoIntegration(config)
-  try {
-    await integration.connect()
-    return true
-  } catch (e: any) {
-    return { error: e.message as string }
-  }
-}
 
 export default {
   schema: SCHEMA,
   integration: MongoIntegration,
-  validateConnection,
 }
