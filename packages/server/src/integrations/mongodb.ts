@@ -16,7 +16,7 @@ import {
 } from "mongodb"
 import environment from "../environment"
 
-export interface MongoDBConfig {
+interface MongoDBConfig {
   connectionString: string
   db: string
   tlsCertificateFile: string
