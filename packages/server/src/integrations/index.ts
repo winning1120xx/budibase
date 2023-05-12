@@ -127,6 +127,7 @@ const VALIDATORS = {
   [SourceName.COUCHDB]: couchdb.validateConnection,
   [SourceName.SQL_SERVER]: sqlServer.validateConnection,
   [SourceName.MONGODB]: mongodb.validateConnection,
+  [SourceName.ARANGODB]: arangodb.validateConnection,
 }
 
 export default {
