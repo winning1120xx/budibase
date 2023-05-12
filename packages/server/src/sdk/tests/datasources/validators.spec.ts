@@ -1,8 +1,6 @@
 import { GenericContainer, Wait } from "testcontainers"
 import { generator } from "@budibase/backend-core/tests"
 import { Duration, TemporalUnit } from "node-duration"
-import { SourceName } from "@budibase/types"
-import integrations from "../../../integrations"
 
 import postgres from "../../../integrations/postgres"
 import mysql from "../../../integrations/mysql"
@@ -10,12 +8,15 @@ import couchdb from "../../../integrations/couchdb"
 import mssql from "../../../integrations/microsoftSqlServer"
 import mongo from "../../../integrations/mongodb"
 import arangodb from "../../../integrations/arangodb"
+import dynamodb from "../../../integrations/dynamodb"
+import { env } from "@budibase/backend-core"
 
 jest.unmock("pg")
 jest.unmock("mysql2/promise")
 jest.unmock("mssql")
 jest.unmock("mongodb")
 jest.unmock("arangojs")
+jest.unmock("aws-sdk")
 
 describe("datasource validators", () => {
   describe("postgres", () => {
@@ -389,6 +390,59 @@ describe("datasource validators", () => {
       const result = await integration.testConnection()
       expect(result).toEqual({
         error: "getaddrinfo ENOTFOUND not.here",
+      })
+    })
+  })
+
+  describe("dynamodb", () => {
+    let connectionSettings: {
+      user: string
+      password: string
+      url: string
+    }
+
+    beforeAll(async () => {
+      const user = "root"
+      const password = generator.hash()
+      const container = await new GenericContainer("amazon/dynamodb-local")
+        .withExposedPorts(8000)
+        .start()
+
+      connectionSettings = {
+        user,
+        password,
+        url: `http://${container.getContainerIpAddress()}:${container.getMappedPort(
+          8000
+        )}`,
+      }
+      env._set("AWS_ACCESS_KEY_ID", "mocked_key")
+      env._set("AWS_SECRET_ACCESS_KEY", "mocked_secret")
+    })
+
+    it("test valid connection string", async () => {
+      const integration = new dynamodb.integration({
+        endpoint: connectionSettings.url,
+        region: "",
+        accessKeyId: "",
+        secretAccessKey: "",
+      })
+
+      const result = await integration.testConnection()
+      expect(result).toBe(true)
+    })
+
+    it("test wrong endpoint", async () => {
+      const integration = new dynamodb.integration({
+        endpoint: "http://wrong.url:2880",
+        region: "",
+        accessKeyId: "",
+        secretAccessKey: "",
+      })
+
+      const result = await integration.testConnection()
+      expect(result).toEqual({
+        error:
+          "Inaccessible host: `wrong.url' at port `undefined'. This service may not be available in the `eu-west-1' region.",
       })
     })
   })
